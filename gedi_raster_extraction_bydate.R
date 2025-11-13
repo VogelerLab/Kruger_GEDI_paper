@@ -3,9 +3,7 @@
 ### GEDI Processing Script 2:                                               ###
 ### Polygon Value Extraction Script                                         ###
 ### Re-Configured by Neal Swayze 5/3/2022                                   ###
-### POC: nealswayze1@gmail.com    
-###
-### Modified by Steven Filippelli 8/31/2022
+### Modified by Steven Filippelli 8/31/2022                                 ###
 ###                                                                         ###
 ###############################################################################
 
@@ -22,7 +20,7 @@ p_load(parallel, foreach, data.table, tidyverse, exactextractr, sf, terra, rgeos
 ###_______________________________###
 
 ### ESTABLISH YOUR ROOT DIRECTORY
-rootDir <- ("F:/ECOFOR")
+rootDir <- ("D:/ECOFOR")
 setwd(rootDir)
 
 point_path <- r"(J:\projects\ECOFOR\gedi\gedi_data\04_gedi_filtered_data_shp\GEDI_2AB_2019to2023_leafon_sampy500m.parquet)"
@@ -62,7 +60,6 @@ combos = expand.grid(years, seasons)
 
 ### Auto detect the cores and register parallel session
 cores = detectCores()
-# cores = 4
 cl <- makeCluster(cores)
 registerDoParallel(cl)
 
@@ -105,12 +102,7 @@ colnames(df_wet) = gsub("mean.", "wet_", colnames(df_wet))
 df_dry <- df_ext[df_ext$season=="dry",]
 colnames(df_dry) = gsub("mean.", "dry_", colnames(df_dry))
 
-#  Join to original point layer
-# dfout <- left_join(df, select(df_wet,-c("season", "year")), by="shot_number")
-# dfout <- left_join(dfout, select(df_dry,-c("season", "year")), by="shot_number")
-# dfout <- select(dfout, -c("date"))
-
-### Or just merge the two seasons for export
+### Merge the two seasons for export
 dfout <- left_join(select(df_dry,-c("season", "year")),
                    select(df_wet,-c("season", "year")), by="shot_number")
 
@@ -119,10 +111,6 @@ dfout <- left_join(select(df_dry,-c("season", "year")),
 
 # Write out data as csv, gpkg, and parquet
 setwd(spectral_data_dir)
-fwrite(as.data.frame(dfout), file = paste0(outbasename,"_lt2.csv"), sep = ",")
+fwrite(as.data.frame(dfout), file = paste0(outbasename,"_lt.csv"), sep = ",")
 # st_write_parquet(dfout_geo, paste0(outbasename,"_lt.parquet"))
 # st_write(dfout_geo, paste0(outbasename,"_lt.gpkg"), append=FALSE)
-
-# # write standard parquet (no geodata)
-# library(arrow)
-# write_parquet(dfout, paste0(outbasename,"_lt.parquet"))

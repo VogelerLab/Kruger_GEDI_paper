@@ -3,9 +3,7 @@
 ### GEDI Processing Script 2:                                               ###
 ### Polygon Value Extraction Script                                         ###
 ### Re-Configured by Neal Swayze 5/3/2022                                   ###
-### POC: nealswayze1@gmail.com    
-###
-### Modified by Steven Filippelli 8/24/2023
+### Modified by Steven Filippelli 8/24/2023                                 ###
 ###                                                                         ###
 ###############################################################################
 
@@ -22,12 +20,11 @@ terraOptions(memfrac = 0.15, todisk = FALSE)
 ### CONFIGURE Input/Output ###
 ###_______________________________###
 point_path <- r"(C:\scratch\ECOFOR\gedi\GEDI_2AB_2019to2023_leafon_sampy500m.parquet)"
-# rast_path <- r"(J:\projects\ECOFOR\topo\topo_all.vrt)"
+rast_path <- r"(J:\projects\ECOFOR\topo\topo_all.vrt)"
 # rast_path <- r"(J:\projects\ECOFOR\soils\soil_all.vrt)"
-rast_path <- r"(J:\projects\ECOFOR\climate\worldclim_bio_all.vrt)"
 
 ### Setup output
-rootDir <- ("H:/ECOFOR")
+rootDir <- ("D:/ECOFOR")
 setwd(rootDir)
 outbasename <- tools::file_path_sans_ext(basename(point_path))
 spectral_data_dir = file.path(rootDir, "gedi", "extracted")
