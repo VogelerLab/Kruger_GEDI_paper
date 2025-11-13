@@ -4,49 +4,18 @@ import numpy as np
 from glob import glob
 import pandas as pd
 import geopandas as gpd
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from scipy.ndimage import uniform_filter
 from joblib import load
 import concurrent.futures
 
 kernel_rad = 0  # radius of window for focal mean. 0 for no focal mean. 
-
-# # for classification
-# out_nodata = 255  
-# out_dtype = np.uint8
-
-# for regression
 out_nodata = np.nan
 out_dtype = np.float32
 
-#TODO: For paths to static variable, copy it as many times as the dynanic variable (e.g., [path]*len(lt_paths))
-
 # Mask must match the predictor set or the results are invalid
-# mask_path = r"J:\projects\ECOFOR\boundaries\gknp_utm36n_v2.tif"
-# mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n.tif"
-# mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n_mgrsclip.tif"
 mask_path = r"D:\ECOFOR\boundaries\greaterkruger_utm36n.tif"
-
-# # Get windows to apply process to
-# with rasterio.open(mask_path) as src:
-#     profile = src.profile
-#     windows = [window for ij, window in src.block_windows()] 
-#     big_window = rasterio.windows.Window(col_off=0, row_off=0, width=src.meta['width'], height=src.meta['height'])
-#     profile['nodata'] = out_nodata
-#     profile['dtype'] = out_dtype
-#     profile['count'] = 1
-    
-# TODO: check that all rasters match
-
-# Can't get init of processpoolexecuter working
-# def init():
-#     global kernal_rad
-#     kernel_rad = 0  # radius of window for focal mean. 0 for no focal mean.
-#     global out_nodata
-#     out_nodata = 255
-#     out_dtype = np.uint8
-#     mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n.tif"
-    
+  
 def buffer_window(window, big_window, overlap=1):
     window = rasterio.windows.Window(
                 col_off=window.col_off - overlap,
@@ -68,11 +37,6 @@ def map_window(w, rf, paths_dict):
         w_buf = buffer_window(w, big_window, overlap=kernel_rad)
         rstart = w.row_off-w_buf.row_off
         cstart = w.col_off-w_buf.col_off
-
-    # load all data for window
-    # TODO: consider stacking 2-d arrays, get nodata for whole array, then use np.take and np.put for reshaping around rf.predict,
-    #       or just use a fill value for predicting then mask out later to avoid all the reshaping
-    # TODO: also consider reading in a masked array to simplify masking
     
     # load mask
     with rasterio.open(mask_path) as src:
@@ -94,7 +58,6 @@ def map_window(w, rf, paths_dict):
             bixs, bands = list(bdict.keys()), list(bdict.values())
             nodata_val = src.nodata
             
-            # TODO: Check for missing bands before even starting map_window?
             if len(bdict)==0:
                 print('None of the bands in', path,' are in the model predictor set. Quitting.')
                 return None            
@@ -151,67 +114,42 @@ def map_window(w, rf, paths_dict):
 
 
 if __name__=='__main__':
-    # TODO: Try using larger block multiple of internal block size. Lots of time might be spent on passing modeling object to worker, so reduce number of tasks with bigger blocks.
-    # change executor function to map_stddev and change output params if making uncertainty map
     
     # Setup for all runs
-    lt_dir = r"J:\projects\ECOFOR\lt" #r"D:\ECOFOR\lt" #
-    palsar_dir = r"J:\projects\ECOFOR\palsar\lt_tiling_scheme" #r"D:\ECOFOR\palsar\lt_tiling_scheme" #
-#     planetscope_dir = r"I:\ECOFOR\planet\lt_tiling_scheme"
+    lt_dir = r"J:\projects\ECOFOR\lt" 
+    palsar_dir = r"J:\projects\ECOFOR\palsar\lt_tiling_scheme"
 
     # Mask must match the predictor set or the results are invalid
-    # mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n_mgrsclip.tif"
-    # mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n.tif"
     mask_path = r"D:\ECOFOR\boundaries\greaterkruger_utm36n.tif"
-    # mask_path = r"J:\projects\ECOFOR\boundaries\gknp_utm36n_v2.tif"
-    
-    
-#     # Try setting these up in main instead of globally
-#     kernel_rad = 0  # radius of window for focal mean. 0 for no focal mean. 
-#     out_nodata = 255
-#     out_dtype = np.uint8
-#     mask_path = r"J:\projects\ECOFOR\boundaries\greaterkruger_utm36n.tif"
     
     # processpoolexecuter params
     num_workers = 18
     chunksize = 50
     
     runs = [
-        {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_cover_gt5m_v08.joblib",
-         'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\cover_gt5m",
-         'outbasename':'cover_gt5m_'
+        {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_cover_v08.joblib",
+         'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\cover",
+         'outbasename':'cover_'
         },
-        {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_cover_lt5m_v08.joblib",
-         'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\cover_lt5m",
-         'outbasename':'cover_lt5m_'
+        {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_rh98_v08.joblib",
+         'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\rh98",
+         'outbasename':'rh98_'
         },
-        # {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_rh98_v08.joblib",
-        #  'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\rh98",
-        #  'outbasename':'rh98_'
-        # },
-        # {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_fhd_normal_v08.joblib",
-        #  'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\fhd",
-        #  'outbasename':'fhd_'
-        # },
-        # {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_pai_v08.joblib",
-        #  'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\pai",
-        #  'outbasename':'pai_'
-        # }
+        {'model':r"D:\ECOFOR\gedi\models\v08\GEDI_2AB_2019to2023_leafon_sampy500m_all_lt-p-s-t_fhd_normal_v08.joblib",
+         'outdir':r"D:\ECOFOR\gedi\maps\v08\lt-p-s-t\fhd",
+         'outbasename':'fhd_'
+        },
            ]
 
     for run in runs:
         # Copy model to output directory
         os.makedirs(run['outdir'], exist_ok=True)
-#         mod_path = os.path.join(run['outdir'], os.path.basename(run['model']))
-#         shutil.copy(run['model'], mod_path)
+        mod_path = os.path.join(run['outdir'], os.path.basename(run['model']))
+        shutil.copy(run['model'], mod_path)
         rf = load(run['model'])
 
         # run mapping for each year of the predictor time series
-#         years = [int(os.path.splitext(p)[0].split('_')[-1]) for p in glob(r"C:\scratch\ECOFOR\palsar\*.vrt")]
-#         years = years[1:]
-        years = list(range(2007, 2011)) + list(range(2015, 2023))
-        # years = [2007]
-        
+        years = list(range(2007, 2011)) + list(range(2015, 2023))        
         for year in years:
             start=time.time()
             
@@ -220,15 +158,11 @@ if __name__=='__main__':
                                     'band_prefix':'lt_dry_'},
                           'lt_wet':{'path':os.path.join(lt_dir, "wet", "lt_wet_"+str(year)+".vrt"),
                                     'band_prefix':'lt_wet_'},
-#                           'ps':{'path':os.path.join(planetscope_dir, "ps_"+str(year)+".vrt"),
-#                                     'band_prefix':'ps_'},
                           'palsar':{'path':os.path.join(palsar_dir, "palsar_"+str(year)+".vrt"),
                                     'band_prefix':'palsar_'},
-#                           'climate':{'path': r"J:\projects\ECOFOR\climate\worldclim_bio_all.vrt",
-#                                     'band_prefix':'climate_'},
-                          'topo':{'path': r"D:\ECOFOR\topo\topo_all.vrt", #r"J:\projects\ECOFOR\topo\topo_all.vrt",
+                          'topo':{'path': r"D:\ECOFOR\topo\topo_all.vrt", 
                                     'band_prefix':'topo_'},
-                          'soil':{'path': r"D:\ECOFOR\soils\soil_all.vrt", #r"J:\projects\ECOFOR\soils\soil_all.vrt",
+                          'soil':{'path': r"D:\ECOFOR\soils\soil_all.vrt",
                                     'band_prefix':'soil_'},
                         }
             
@@ -247,21 +181,11 @@ if __name__=='__main__':
                 profile['dtype'] = out_dtype
                 profile['count'] = 1
             
-            #test
-            # windows = windows[:400]
-            
             path_iter = [paths_dict]*len(windows)
             rf_iter = [rf]*len(windows)
             args = (windows, rf_iter, path_iter)
 
-            with rasterio.open(outpath, 'w', **profile) as dst:
-                # # Test map_window
-                # print(len(windows))
-                # for window in windows:
-                #     print(window)
-                #     result = map_window(window, rf, paths_dict)
-                #     dst.write(result, 1, window=window)
-                                    
+            with rasterio.open(outpath, 'w', **profile) as dst:                                    
                 with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
                     for window, result in zip(windows, executor.map(map_window, *args, chunksize=chunksize)):
                         dst.write(result, 1, window=window)

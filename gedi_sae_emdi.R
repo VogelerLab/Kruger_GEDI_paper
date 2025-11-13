@@ -105,27 +105,3 @@ for (metric in metrics){
   plot_path <- paste0(r"(F:\My Drive\Work\ecofor\manuscript\figs\sae_diagnostics_)", metric, ".svg")
   ggsave(plot_path, all_plots, height=2.5, width=6.5, units="in", dpi=300)
 }
-
-
-
-
-
-# # ----Fill pop domains method ---------------------------------------------------------------
-# # Domains in samp need to be in pop even if we don't want to estimate in those domains.
-# # copying rows from samp for the missing domains doesn't affect the model fit
-# # But it does affect all the estimates (even for the domains of interest)
-# # So this should not be done. The full population should be gathered in the years used in the sample.
-# domains_notin_pop <- setdiff(unique(samp['domain']), unique(pop['domain']))$domain
-# copy_rows <- samp %>%
-#               filter(domain %in% domains_notin_pop) %>%
-#               select("pred_cover", "pred_rh98", "pred_fhd_normal", "pred_pai", "rain_year", "aoi", "domain") %>%
-#               rename(cover=pred_cover, rh98=pred_rh98, fhd=pred_fhd_normal, pai=pred_pai, year=rain_year) %>%
-#               mutate(year = type.convert(year, as.is=TRUE))
-# pop_filled <- bind_rows(pop, copy_rows)
-#
-# # Subsetting the copy rows doesn't make a difference in the model stats.
-# # It does affect the estimates (even of the domains of interest with full populations)
-# copy_rows1 <- copy_rows %>% group_by(domain) %>% slice(1)
-# pop_filled1 <- bind_rows(pop, copy_rows1)
-
-
